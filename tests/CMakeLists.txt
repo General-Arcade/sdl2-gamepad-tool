@@ -36,6 +36,8 @@ add_gamepad_test(tst_sdlpollevent
         ${CMAKE_SOURCE_DIR}/src/core/sdlpollevent.h
         ${CMAKE_SOURCE_DIR}/src/core/GamepadMapper.cpp
         ${CMAKE_SOURCE_DIR}/src/core/GamepadMapper.h
+        ${CMAKE_SOURCE_DIR}/src/core/GamepadGuid.cpp
+        ${CMAKE_SOURCE_DIR}/src/core/GamepadGuid.h
         ${CMAKE_SOURCE_DIR}/src/core/Logger.cpp
         ${CMAKE_SOURCE_DIR}/src/core/Logger.h
     INCLUDE_DIRS
@@ -52,6 +54,8 @@ add_gamepad_test(tst_gamepadmapper
         tst_gamepadmapper.cpp
         ${CMAKE_SOURCE_DIR}/src/core/GamepadMapper.cpp
         ${CMAKE_SOURCE_DIR}/src/core/GamepadMapper.h
+        ${CMAKE_SOURCE_DIR}/src/core/GamepadGuid.cpp
+        ${CMAKE_SOURCE_DIR}/src/core/GamepadGuid.h
     INCLUDE_DIRS
         ${CMAKE_SOURCE_DIR}/src/core
     LINK_SDL TRUE
@@ -119,6 +123,8 @@ add_gamepad_test(tst_joystickenumerator
         tst_joystickenumerator.cpp
         ${CMAKE_SOURCE_DIR}/src/core/JoystickEnumerator.cpp
         ${CMAKE_SOURCE_DIR}/src/core/JoystickEnumerator.h
+        ${CMAKE_SOURCE_DIR}/src/core/GamepadGuid.cpp
+        ${CMAKE_SOURCE_DIR}/src/core/GamepadGuid.h
     INCLUDE_DIRS
         ${CMAKE_SOURCE_DIR}/src/core
     LINK_SDL TRUE

@@ -8,6 +8,7 @@
 #include "Environment.h"
 #include "Logger.h"
 #include "JoystickEnumerator.h"
+#include "GamepadGuid.h"
 
 const ImagesInfo MainWindow::s_imagesInfo[SDL_CONTROLLER_BUTTON_MAX + SDL_CONTROLLER_BINDING_AXIS_MAX] = {
     {SDL_CONTROLLER_BUTTON_A, ":/images/PadSetup-Button-3"},
@@ -337,18 +338,13 @@ void MainWindow::copyGuid() {
         return;
     }
     SDL_JoystickGUID guid = SDL_JoystickGetGUID(m_currentJoystick);
-    Uint16 crc;
-    SDL_GetJoystickGUIDInfo(guid, nullptr, nullptr, nullptr, &crc);
-    if (crc) {
-        guid.data[2] = 0;
-        guid.data[3] = 0;
-    }
-    char guidStr[64];
-    SDL_JoystickGetGUIDString(guid, guidStr, sizeof(guidStr));
+    GamepadGuid::zeroCrc(guid);
+    char guidString[33];
+    SDL_JoystickGetGUIDString(guid, guidString, sizeof(guidString));
 
     const char *name = m_currentGamepad ? SDL_GameControllerName(m_currentGamepad) : "";
-    QApplication::clipboard()->setText(guidStr);
-    Logger::instance().info(QString("The GUID for \"%1\" is \"%2\"").arg(name, guidStr));
+    QApplication::clipboard()->setText(guidString);
+    Logger::instance().info(QString("The GUID for \"%1\" is \"%2\"").arg(name, guidString));
 
     QMessageBox msg;
     msg.setText(APP_NAME);

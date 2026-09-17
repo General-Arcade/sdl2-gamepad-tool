@@ -1,4 +1,5 @@
 #include "JoystickEnumerator.h"
+#include "GamepadGuid.h"
 #include "SDL_gamecontroller.h"
 
 std::vector<JoystickInfo> enumerateJoysticks() {
@@ -16,9 +17,10 @@ std::vector<JoystickInfo> enumerateJoysticks() {
         info.isGameController = SDL_IsGameController(i);
 
         SDL_JoystickGUID guid = SDL_JoystickGetGUID(joystick);
-        char guidStr[64];
-        SDL_JoystickGetGUIDString(guid, guidStr, sizeof(guidStr));
-        info.guid = QString(guidStr);
+        GamepadGuid::zeroCrc(guid);
+        char guidString[33];
+        SDL_JoystickGetGUIDString(guid, guidString, sizeof(guidString));
+        info.guid = QString::fromLatin1(guidString);
 
         if (info.isGameController) {
             SDL_GameController *gamepad = SDL_GameControllerOpen(i);

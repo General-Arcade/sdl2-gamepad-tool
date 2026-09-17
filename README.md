@@ -26,6 +26,7 @@ src/
   core/                     Core logic
     SDLPollEvent            SDL event loop on a QThread
     GamepadMapper           Mapping state machine (binding wizard)
+    GamepadGuid             Canonical GUID formatting for SDL mappings
     GamepadDatabase         Controller DB file management
     JoystickEnumerator      Joystick discovery helper
     Logger                  Centralized logging (console + UI signal)

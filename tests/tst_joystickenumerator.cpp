@@ -1,5 +1,6 @@
 #include <QtTest>
 #include "JoystickEnumerator.h"
+#include "GamepadGuid.h"
 
 class TestJoystickEnumerator : public QObject
 {
@@ -9,6 +10,8 @@ private slots:
     void initTestCase();
     void testEnumerateReturnsVector();
     void testJoystickInfoFieldAssignment();
+    void testGuidStringZeroesEmbeddedCrc();
+    void testGuidStringPreservesGuidWithoutCrc();
     void cleanupTestCase();
 };
 
@@ -37,6 +40,30 @@ void TestJoystickEnumerator::testJoystickInfoFieldAssignment()
     QCOMPARE(info.name, QString("Test Pad"));
     QVERIFY(!info.guid.isEmpty());
     QVERIFY(info.isGameController);
+}
+
+void TestJoystickEnumerator::testGuidStringZeroesEmbeddedCrc()
+{
+    SDL_JoystickGUID guid =
+        SDL_JoystickGetGUIDFromString("0300abcd4c050000c405000000010000");
+    GamepadGuid::zeroCrc(guid);
+    char guidString[33];
+    SDL_JoystickGetGUIDString(guid, guidString, sizeof(guidString));
+
+    QCOMPARE(QString::fromLatin1(guidString),
+             QString("030000004c050000c405000000010000"));
+}
+
+void TestJoystickEnumerator::testGuidStringPreservesGuidWithoutCrc()
+{
+    SDL_JoystickGUID guid =
+        SDL_JoystickGetGUIDFromString("030000004c050000c405000000010000");
+    GamepadGuid::zeroCrc(guid);
+    char guidString[33];
+    SDL_JoystickGetGUIDString(guid, guidString, sizeof(guidString));
+
+    QCOMPARE(QString::fromLatin1(guidString),
+             QString("030000004c050000c405000000010000"));
 }
 
 void TestJoystickEnumerator::cleanupTestCase()

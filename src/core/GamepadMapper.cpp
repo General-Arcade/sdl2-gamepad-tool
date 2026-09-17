@@ -1,4 +1,5 @@
 #include "GamepadMapper.h"
+#include "GamepadGuid.h"
 
 const int GamepadMapper::BINDING_ORDER[BINDING_COUNT] = {
     SDL_CONTROLLER_BUTTON_A,
@@ -287,7 +288,6 @@ void GamepadMapper::clearAxisState()
 QString GamepadMapper::generateMappingString(SDL_JoystickID joystickId)
 {
     SDL_JoystickGUID guid;
-    Uint16 crc;
     char mapping[2048];
     char pszElement[12];
 
@@ -297,11 +297,7 @@ QString GamepadMapper::generateMappingString(SDL_JoystickID joystickId)
         return QString();
     }
     guid = SDL_JoystickGetGUID(joystick);
-    SDL_GetJoystickGUIDInfo(guid, nullptr, nullptr, nullptr, &crc);
-    if (crc) {
-        guid.data[2] = 0;
-        guid.data[3] = 0;
-    }
+    Uint16 crc = GamepadGuid::zeroCrc(guid);
     SDL_JoystickGetGUIDString(guid, mapping, SDL_arraysize(mapping));
     SDL_strlcat(mapping, ",", SDL_arraysize(mapping));
     SDL_strlcat(mapping, "%GAMEPAD_NAME%", SDL_arraysize(mapping));

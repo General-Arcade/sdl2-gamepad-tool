@@ -8,6 +8,8 @@ set(SOURCES
     core/GamepadMapper.h
     core/GamepadDatabase.cpp
     core/GamepadDatabase.h
+    core/GamepadGuid.cpp
+    core/GamepadGuid.h
     core/Logger.cpp
     core/Logger.h
     core/JoystickEnumerator.cpp
