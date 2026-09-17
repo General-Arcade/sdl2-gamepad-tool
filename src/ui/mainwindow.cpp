@@ -5,10 +5,12 @@
 #include <QTimer>
 #include <QThread>
 #include <QInputDialog>
+#include <QFileInfo>
 #include "Environment.h"
 #include "Logger.h"
 #include "JoystickEnumerator.h"
 #include "GamepadGuid.h"
+#include "SteamConfig.h"
 
 const ImagesInfo MainWindow::s_imagesInfo[SDL_CONTROLLER_BUTTON_MAX + SDL_CONTROLLER_BINDING_AXIS_MAX] = {
     {SDL_CONTROLLER_BUTTON_A, ":/images/PadSetup-Button-3"},
@@ -92,6 +94,8 @@ MainWindow::MainWindow(QWidget *parent) :
     m_copyMenu = new QMenu(this);
     m_copyMenu->addAction("Copy Gamepad GUID", this, &MainWindow::copyGuid);
     m_copyMenu->addAction("Copy Mapping String", this, &MainWindow::copyMappingString);
+    m_copyMenu->addSeparator();
+    m_copyMenu->addAction("Save Mapping to Steam...", this, &MainWindow::saveMappingToSteam);
     ui->copyButton->setMenu(m_copyMenu);
 
     searchJoysticks();
@@ -285,8 +289,15 @@ void MainWindow::copyDeviceIdentifier(QToolButton *button, const QString &name) 
     }
 
     QApplication::clipboard()->setText(identifier);
-    ui->statusBar->showMessage(
-        QStringLiteral("Copied %1 %2 to clipboard").arg(name, identifier), 2000);
+    const QString previousStatus = ui->statusBar->currentMessage();
+    const QString feedback =
+        QStringLiteral("Copied %1 %2 to clipboard").arg(name, identifier);
+    ui->statusBar->showMessage(feedback);
+    QTimer::singleShot(2000, this, [this, feedback, previousStatus]() {
+        if (ui->statusBar->currentMessage() == feedback) {
+            ui->statusBar->showMessage(previousStatus);
+        }
+    });
 }
 
 void MainWindow::addJoystick(int i) {
@@ -447,6 +458,57 @@ void MainWindow::copyMappingString() {
     msg.setInformativeText(QString("Mapping string for \"%1\" copied to a clipboard buffer").arg(name));
     msg.setIcon(QMessageBox::Information);
     msg.exec();
+}
+
+void MainWindow::saveMappingToSteam() {
+    if (!m_currentGamepad) {
+        return;
+    }
+
+    char *bindings = SDL_GameControllerMapping(m_currentGamepad);
+    if (!bindings) {
+        Logger::instance().error("No mapping available for this controller");
+        return;
+    }
+    const QString mapping = QString::fromUtf8(bindings);
+    SDL_free(bindings);
+
+    const QString configPath = SteamConfig::defaultPath();
+    if (!QFileInfo::exists(configPath)) {
+        QMessageBox::critical(
+            this,
+            APP_NAME,
+            QStringLiteral("Steam config was not found at:\n%1").arg(configPath));
+        return;
+    }
+
+    QMessageBox confirmation;
+    confirmation.setText(APP_NAME);
+    confirmation.setInformativeText(
+        QStringLiteral("Close Steam before continuing so it does not overwrite the change.\n\n"
+                       "Update %1 and create a backup?").arg(configPath));
+    confirmation.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    confirmation.setDefaultButton(QMessageBox::No);
+    confirmation.setIcon(QMessageBox::Warning);
+    if (confirmation.exec() != QMessageBox::Yes) {
+        return;
+    }
+
+    QString error;
+    if (!SteamConfig::saveMapping(configPath, mapping, &error)) {
+        Logger::instance().error(error);
+        QMessageBox::critical(this, APP_NAME, error);
+        return;
+    }
+
+    Logger::instance().info(
+        QStringLiteral("Saved mapping to Steam config %1").arg(configPath));
+    QMessageBox::information(
+        this,
+        APP_NAME,
+        QStringLiteral("Mapping saved to Steam. A backup was written to:\n%1\n\n"
+                       "Restart Steam to load the updated mapping.")
+            .arg(SteamConfig::backupPath(configPath)));
 }
 
 void MainWindow::on_deleteLocalMappingButton_clicked() {

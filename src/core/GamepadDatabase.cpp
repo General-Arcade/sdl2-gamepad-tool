@@ -1,4 +1,5 @@
 #include "GamepadDatabase.h"
+#include "GamepadMapping.h"
 #include "Logger.h"
 #include <QDir>
 #include <QFile>
@@ -41,30 +42,10 @@ void GamepadDatabase::loadMappings()
     SDL_GameControllerAddMappingsFromFile(localDbPath.toUtf8().constData());
 }
 
-static QString extractMappingKey(const QString& mapping)
-{
-    // Build a key from GUID + CRC so controllers sharing a base GUID but
-    // differing by CRC are stored as separate entries.
-    QString key;
-    int commaPos = mapping.indexOf(',');
-    if (commaPos > 0) {
-        key = mapping.left(commaPos);
-    }
-    static const QString crcTag = QStringLiteral(",crc:");
-    int crcPos = mapping.indexOf(crcTag);
-    if (crcPos >= 0) {
-        crcPos += 1; // skip the leading comma to capture "crc:XXXX"
-        int crcEnd = mapping.indexOf(',', crcPos);
-        if (crcEnd < 0)
-            crcEnd = mapping.length();
-        key += ',' + mapping.mid(crcPos, crcEnd - crcPos);
-    }
-    return key;
-}
 
 void GamepadDatabase::saveLocalMapping(const QString& mappingString)
 {
-    QString key = extractMappingKey(mappingString);
+    QString key = GamepadMapping::key(mappingString);
     QString filePath = QDir(m_dataPath).filePath(LOCAL_DB_FILE);
 
     // Read phase: collect existing lines, filtering out the old entry for this key
@@ -74,7 +55,7 @@ void GamepadDatabase::saveLocalMapping(const QString& mappingString)
         QTextStream t(&readFile);
         while (!t.atEnd()) {
             QString line = t.readLine();
-            if (!key.isEmpty() && extractMappingKey(line) == key) {
+            if (!key.isEmpty() && GamepadMapping::key(line) == key) {
                 continue; // skip existing entry for this GUID+CRC
             }
             contents.append(line + "\n");

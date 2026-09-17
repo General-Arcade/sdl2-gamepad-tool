@@ -67,6 +67,8 @@ add_gamepad_test(tst_gamepaddatabase
         tst_gamepaddatabase.cpp
         ${CMAKE_SOURCE_DIR}/src/core/GamepadDatabase.cpp
         ${CMAKE_SOURCE_DIR}/src/core/GamepadDatabase.h
+        ${CMAKE_SOURCE_DIR}/src/core/GamepadMapping.cpp
+        ${CMAKE_SOURCE_DIR}/src/core/GamepadMapping.h
         ${CMAKE_SOURCE_DIR}/src/core/Logger.cpp
         ${CMAKE_SOURCE_DIR}/src/core/Logger.h
     INCLUDE_DIRS
@@ -128,4 +130,16 @@ add_gamepad_test(tst_joystickenumerator
     INCLUDE_DIRS
         ${CMAKE_SOURCE_DIR}/src/core
     LINK_SDL TRUE
+)
+
+# Steam config VDF parsing and atomic update tests
+add_gamepad_test(tst_steamconfig
+    SOURCES
+        tst_steamconfig.cpp
+        ${CMAKE_SOURCE_DIR}/src/core/SteamConfig.cpp
+        ${CMAKE_SOURCE_DIR}/src/core/SteamConfig.h
+        ${CMAKE_SOURCE_DIR}/src/core/GamepadMapping.cpp
+        ${CMAKE_SOURCE_DIR}/src/core/GamepadMapping.h
+    INCLUDE_DIRS
+        ${CMAKE_SOURCE_DIR}/src/core
 )

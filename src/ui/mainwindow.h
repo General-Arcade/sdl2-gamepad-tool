@@ -78,6 +78,7 @@ private slots:
     void on_gamepadComboBox_currentIndexChanged(int index);
     void copyGuid();
     void copyMappingString();
+    void saveMappingToSteam();
     void on_deleteLocalMappingButton_clicked();
     void on_newBindings_clicked();
     void on_cancelButton_clicked();

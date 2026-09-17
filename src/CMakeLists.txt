@@ -8,12 +8,16 @@ set(SOURCES
     core/GamepadMapper.h
     core/GamepadDatabase.cpp
     core/GamepadDatabase.h
+    core/GamepadMapping.cpp
+    core/GamepadMapping.h
     core/GamepadGuid.cpp
     core/GamepadGuid.h
     core/Logger.cpp
     core/Logger.h
     core/JoystickEnumerator.cpp
     core/JoystickEnumerator.h
+    core/SteamConfig.cpp
+    core/SteamConfig.h
     network/filedownloader.cpp
     network/filedownloader.h
     platform/Environment.h

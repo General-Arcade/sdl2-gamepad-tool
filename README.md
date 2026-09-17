@@ -12,6 +12,7 @@ Created as an alternative to the Steam Big Picture gamepad configurator.
 - Display the selected controller's USB vendor and product IDs; click either value to copy it
 - Create SDL2 controller mappings through a step-by-step binding wizard
 - Save mappings locally and export to clipboard
+- Save mappings into Steam's `config.vdf` on Windows, macOS, Linux, and Steam Deck
 - Update the community gamecontrollerdb.txt database from GitHub
 - Set SDL_GAMECONTROLLERCONFIG environment variable for immediate use
 - Cross-platform: Linux, macOS, Windows (64-bit)
@@ -29,6 +30,8 @@ src/
     GamepadMapper           Mapping state machine (binding wizard)
     GamepadGuid             Canonical GUID formatting for SDL mappings
     GamepadDatabase         Controller DB file management
+    GamepadMapping          Shared mapping identity helpers
+    SteamConfig             Lossless Steam VDF updates and backups
     JoystickEnumerator      Joystick discovery helper
     Logger                  Centralized logging (console + UI signal)
   network/                  Network utilities
@@ -36,7 +39,7 @@ src/
   platform/                 Platform abstractions
     Environment             Abstract env var interface (Linux/Mac/Win)
   resources/                Icons, images, .qrc files, gamecontrollerdb.txt
-tests/                      QtTest unit tests (6 suites)
+tests/                      QtTest unit tests (7 suites)
 scripts/                    Build and packaging scripts
 ```
 
@@ -48,6 +51,21 @@ Thread model: MainWindow runs on the main Qt event loop. SDLPollEvent runs SDL_P
 - SDL2 (auto-downloaded via CMake FetchContent if not found)
 - CMake 3.16+
 - C++17 compiler
+
+## Steam integration
+
+Close Steam before changing its controller configuration. Select a mapped controller,
+open the **Copy to Clipboard** menu, and choose **Save Mapping to Steam...**. The tool:
+
+- updates the matching GUID+CRC entry under `InstallConfigStore/SDL_GamepadBind`;
+- preserves unrelated `config.vdf` content and other controller mappings;
+- writes the update atomically;
+- creates `config.vdf.gamepad-tool.bak` beside the Steam configuration before changing it.
+
+The configuration is discovered from Steam's registry entry on Windows, from
+`~/Library/Application Support/Steam/config/config.vdf` on macOS, and from
+`~/.steam/steam/config/config.vdf` on Steam Deck/Linux. Linux also checks
+`~/.local/share/Steam/config/config.vdf`. Restart Steam after saving the mapping.
 
 ## Build
 
