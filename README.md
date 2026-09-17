@@ -9,6 +9,7 @@ Created as an alternative to the Steam Big Picture gamepad configurator.
 ## Features
 
 - Test gamepad buttons, axes, triggers, and hats in real time
+- Display the selected controller's USB vendor and product IDs; click either value to copy it
 - Create SDL2 controller mappings through a step-by-step binding wizard
 - Save mappings locally and export to clipboard
 - Update the community gamecontrollerdb.txt database from GitHub

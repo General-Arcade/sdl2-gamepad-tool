@@ -53,6 +53,8 @@ MainWindow::MainWindow(QWidget *parent) :
     m_environment(Environment::create()),
     m_gamepadBgImage(GAMEPAD_BG_IMAGE_FRONT),
     m_currentAppMode(APPMODE_TEST),
+    m_vendorIdButton(nullptr),
+    m_productIdButton(nullptr),
     m_gamepadFacingIndicator(nullptr) {
 
     memset(m_images, 0, sizeof(m_images));
@@ -60,6 +62,24 @@ MainWindow::MainWindow(QWidget *parent) :
                    | Qt::WindowCloseButtonHint | Qt::WindowMinimizeButtonHint);
     ui->setupUi(this);
     statusBar()->setSizeGripEnabled(false);
+    m_vendorIdButton = new QToolButton(this);
+    m_productIdButton = new QToolButton(this);
+    const auto setupIdentifierButton = [this](QToolButton *button, const QString &toolTip) {
+        button->setAutoRaise(true);
+        button->setToolButtonStyle(Qt::ToolButtonTextOnly);
+        button->setCursor(Qt::PointingHandCursor);
+        button->setToolTip(toolTip);
+        button->hide();
+        ui->statusBar->addPermanentWidget(button);
+    };
+    setupIdentifierButton(m_vendorIdButton, "Copy the USB vendor ID");
+    setupIdentifierButton(m_productIdButton, "Copy the USB product ID");
+    connect(m_vendorIdButton, &QToolButton::clicked, this, [this]() {
+        copyDeviceIdentifier(m_vendorIdButton, QStringLiteral("VID"));
+    });
+    connect(m_productIdButton, &QToolButton::clicked, this, [this]() {
+        copyDeviceIdentifier(m_productIdButton, QStringLiteral("PID"));
+    });
 
     connect(&Logger::instance(), &Logger::messageLogged, this, &MainWindow::appendToLog);
     m_database.initialize(QApplication::applicationDirPath());
@@ -226,6 +246,47 @@ void MainWindow::closeActiveGamepad() {
         SDL_JoystickClose(m_currentJoystick);
         m_currentJoystick = nullptr;
     }
+    updateDeviceIdentifiers();
+}
+
+void MainWindow::updateDeviceIdentifiers() {
+    if (!m_vendorIdButton || !m_productIdButton) {
+        return;
+    }
+    if (!m_currentJoystick) {
+        m_vendorIdButton->hide();
+        m_productIdButton->hide();
+        return;
+    }
+
+    const auto formatIdentifier = [](Uint16 identifier) {
+        return identifier == 0
+            ? QStringLiteral("n/a")
+            : QStringLiteral("0x%1").arg(identifier, 4, 16, QLatin1Char('0'));
+    };
+
+    const auto updateButton = [&formatIdentifier](QToolButton *button, const QString &name,
+                                                  Uint16 identifier) {
+        const QString value = formatIdentifier(identifier);
+        button->setText(QStringLiteral("%1: %2").arg(name, value));
+        button->setProperty("identifier", identifier == 0 ? QString() : value);
+        button->setEnabled(identifier != 0);
+        button->show();
+    };
+
+    updateButton(m_vendorIdButton, QStringLiteral("VID"), SDL_JoystickGetVendor(m_currentJoystick));
+    updateButton(m_productIdButton, QStringLiteral("PID"), SDL_JoystickGetProduct(m_currentJoystick));
+}
+
+void MainWindow::copyDeviceIdentifier(QToolButton *button, const QString &name) {
+    const QString identifier = button->property("identifier").toString();
+    if (identifier.isEmpty()) {
+        return;
+    }
+
+    QApplication::clipboard()->setText(identifier);
+    ui->statusBar->showMessage(
+        QStringLiteral("Copied %1 %2 to clipboard").arg(name, identifier), 2000);
 }
 
 void MainWindow::addJoystick(int i) {
@@ -308,6 +369,7 @@ void MainWindow::on_gamepadComboBox_currentIndexChanged(int index) {
         ui->copyButton->setEnabled(isGamepad);
         ui->setEnvVarButton->setEnabled(isGamepad);
         updateDeleteLocalMappingState();
+        updateDeviceIdentifiers();
 
         SDL_JoystickGUID guid = SDL_JoystickGetGUID(m_currentJoystick);
         char guidStr[64];

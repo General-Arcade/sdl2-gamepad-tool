@@ -6,6 +6,7 @@
 #include <QMainWindow>
 #include <QLabel>
 #include <QMenu>
+#include <QToolButton>
 #include <memory>
 #define SDL_MAIN_HANDLED
 #include "SDL.h"
@@ -47,6 +48,8 @@ private:
     void setupImages();
     void hideAllImages();
     void closeActiveGamepad();
+    void updateDeviceIdentifiers();
+    void copyDeviceIdentifier(QToolButton *button, const QString &name);
     void pauseSDLPolling();
     void resumeSDLPolling();
     void setGamepadBgImage(GamepadBgImage bgImage);
@@ -65,6 +68,8 @@ private:
     AppMode m_currentAppMode;
     QMenu *m_copyMenu;
     QLabel *m_images[SDL_CONTROLLER_BUTTON_MAX + SDL_CONTROLLER_BINDING_AXIS_MAX];
+    QToolButton *m_vendorIdButton;
+    QToolButton *m_productIdButton;
     QLabel *m_gamepadFacingIndicator;
 
     static const ImagesInfo s_imagesInfo[SDL_CONTROLLER_BUTTON_MAX + SDL_CONTROLLER_BINDING_AXIS_MAX];
