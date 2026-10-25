@@ -1,4 +1,12 @@
 cmake_minimum_required(VERSION 3.16)
+
+# Minimum macOS version (must be set before project()). Without it the binary
+# targets the build machine's SDK version and won't launch on older macOS.
+# 13.0 matches the minimum supported by Qt 6.
+if(NOT CMAKE_OSX_DEPLOYMENT_TARGET)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "13.0" CACHE STRING "Minimum macOS version" FORCE)
+endif()
+
 project(gamepad-tool VERSION 1.4.2 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
