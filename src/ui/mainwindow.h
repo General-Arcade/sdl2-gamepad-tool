@@ -1,7 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#define APP_NAME "SDL2 Gamepad Tool v1.4.2"
+#define APP_NAME "SDL2 Gamepad Tool v1.5.0"
 
 #include <QMainWindow>
 #include <QLabel>
