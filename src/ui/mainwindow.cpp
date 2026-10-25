@@ -341,7 +341,7 @@ void MainWindow::searchJoysticks() {
         for (const auto &js : joysticks) {
             QString suffix = js.isGameController ? " (mapping available)" : "";
             Logger::instance().info(QString("\"%1\", %2%3").arg(js.name, js.guid, suffix));
-            ui->gamepadComboBox->addItem(js.name + suffix);
+            ui->gamepadComboBox->addItem(js.name + suffix, js.index);
         }
         ui->newBindings->setEnabled(true);
     } else {
@@ -364,18 +364,22 @@ void MainWindow::on_gamepadComboBox_currentIndexChanged(int index) {
         return;
     }
     closeActiveGamepad();
-    if (SDL_NumJoysticks() > 0) {
-        m_currentJoystick = SDL_JoystickOpen(index);
+    // Joysticks that fail to open are left out of the list, so use the SDL
+    // device index stored with the entry rather than the combo box index.
+    const QVariant deviceIndexData = ui->gamepadComboBox->itemData(index);
+    if (deviceIndexData.isValid()) {
+        const int deviceIndex = deviceIndexData.toInt();
+        m_currentJoystick = SDL_JoystickOpen(deviceIndex);
         if (!m_currentJoystick) {
-            Logger::instance().error(QString("Failed to open joystick at index %1").arg(index));
+            Logger::instance().error(QString("Failed to open joystick at index %1").arg(deviceIndex));
             ui->copyButton->setEnabled(false);
             ui->deleteLocalMappingButton->setEnabled(false);
             ui->setEnvVarButton->setEnabled(false);
             return;
         }
-        bool isGamepad = SDL_IsGameController(index);
+        bool isGamepad = SDL_IsGameController(deviceIndex);
         if (isGamepad) {
-            m_currentGamepad = SDL_GameControllerOpen(index);
+            m_currentGamepad = SDL_GameControllerOpen(deviceIndex);
         }
         ui->copyButton->setEnabled(isGamepad);
         ui->setEnvVarButton->setEnabled(isGamepad);
