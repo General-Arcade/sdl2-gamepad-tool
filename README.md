@@ -117,7 +117,16 @@ Requires Qt 6 with the MinGW kit installed via the Qt Online Installer.
 scripts/build_windows.sh
 ```
 
-The script auto-detects Qt and MinGW under `C:/Qt`. Set `QT_BASE`, `QT_VERSION`, `MINGW_KIT`, or `MINGW_DIR` to override.
+The script auto-detects Qt and MinGW under `C:/Qt`. Set `QT_BASE`, `QT_VERSION`, `MINGW_KIT`, or `MINGW_DIR` to override. It also places the Qt runtime and `SDL2.dll` next to `build/src/gamepad-tool.exe`.
+
+To create a distributable ZIP:
+```bash
+scripts/package_windows.sh
+```
+
+### Continuous integration
+
+`.github/workflows/build.yml` builds, tests and packages on Linux, Windows and macOS for every push and pull request. Pushing a `v*` tag attaches the packages to a draft GitHub release. The macOS DMG is signed and notarized only when the secrets listed at the top of the workflow are set.
 
 Binary: `build/src/gamepad-tool.exe`
 

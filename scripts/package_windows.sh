@@ -23,6 +23,11 @@ if [ ! -f "$SRC_DIR/Qt6Core.dll" ]; then
     exit 1
 fi
 
+if [ ! -f "$SRC_DIR/SDL2.dll" ]; then
+    echo "Error: SDL2.dll not found next to gamepad-tool.exe. Copy it into $SRC_DIR."
+    exit 1
+fi
+
 echo "==> Assembling distribution folder: $DIST_DIR"
 rm -rf "$DIST_DIR"
 mkdir -p "$DIST_DIR"

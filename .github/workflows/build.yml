@@ -1,0 +1,157 @@
+name: Build
+
+# Builds, tests and packages on Linux, Windows and macOS for every push and
+# pull request. Pushing a v* tag also attaches the packages to a draft release.
+#
+# The macOS DMG is signed and notarized only when these repository secrets are
+# set; otherwise it is ad-hoc signed and not attached to releases:
+#   MACOS_CERTIFICATE_P12       base64-encoded Developer ID Application .p12
+#   MACOS_CERTIFICATE_PASSWORD  password of the .p12
+#   CODESIGN_IDENTITY           e.g. "Developer ID Application: Name (TEAMID)"
+#   APPLE_ID, APPLE_PASSWORD, APPLE_TEAM_ID  notarization credentials
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qtbase5-dev qt5-qmake libsdl2-dev
+
+      - name: Build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_DISABLE_FIND_PACKAGE_Qt6=ON
+          cmake --build build -j"$(nproc)"
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+        env:
+          QT_QPA_PLATFORM: offscreen
+
+      - name: Package
+        run: |
+          export PATH="/usr/lib/qt5/bin:$PATH"
+          scripts/package_linux_deb.sh
+          scripts/package_linux_tarball.sh
+          scripts/package_linux_appimage.sh
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-linux
+          path: |
+            *.deb
+            *.tar.gz
+            *.AppImage
+          if-no-files-found: error
+
+  windows:
+    runs-on: windows-2025
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.10.2'
+          arch: win64_mingw
+          tools: tools_mingw1310
+          dir: 'C:\'
+          cache: true
+
+      - name: Build and test
+        run: scripts/build_windows.sh
+
+      - name: Package
+        run: scripts/package_windows.sh
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-windows
+          path: SDL2-Gamepad-Tool-*-windows-x64.zip
+          if-no-files-found: error
+
+  macos:
+    runs-on: macos-15
+    env:
+      HAS_SIGNING: ${{ secrets.MACOS_CERTIFICATE_P12 != '' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.11.0'
+          arch: clang_64
+          cache: true
+
+      - name: Import signing certificate
+        if: env.HAS_SIGNING == 'true'
+        env:
+          P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          P12_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -base64 24)"
+          echo "$P12_BASE64" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/certificate.p12" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          rm "$RUNNER_TEMP/certificate.p12"
+
+      - name: Build and test
+        run: QT_PREFIX="$QT_ROOT_DIR" scripts/build_macos.sh
+        env:
+          CODESIGN_IDENTITY: ${{ secrets.CODESIGN_IDENTITY }}
+
+      - name: Package
+        run: scripts/package_macos.sh
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.HAS_SIGNING == 'true' && 'release-macos' || 'macos-unsigned' }}
+          path: SDL2-Gamepad-Tool-*.dmg
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [linux, windows, macos]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+
+      - name: Attach packages to draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release view "$TAG" >/dev/null 2>&1 \
+            || gh release create "$TAG" --draft --verify-tag --title "$TAG" --generate-notes
+          gh release upload "$TAG" dist/* --clobber

@@ -19,7 +19,7 @@ if [ ! -d "$QT_PREFIX" ]; then
     exit 1
 fi
 
-export PATH="$MINGW_DIR:$PATH"
+export PATH="$(cygpath -u "$MINGW_DIR"):$PATH"
 
 echo "==> Using Qt $QT_VERSION at $QT_PREFIX"
 echo "==> Using MinGW at $MINGW_DIR"
@@ -38,9 +38,19 @@ cmake -S "$PROJECT_DIR" -B "$BUILD_DIR" \
 echo "==> Building"
 "$MINGW_DIR/mingw32-make.exe" -C "$BUILD_DIR" -j"$(nproc 2>/dev/null || echo 4)"
 
+# SDL2 built via FetchContent lands under _deps; put it next to the executable
+SDL2_DIR="$BUILD_DIR/_deps/sdl2-build"
+if [ -f "$SDL2_DIR/SDL2.dll" ]; then
+    cp "$SDL2_DIR/SDL2.dll" "$BUILD_DIR/src/"
+fi
+
 echo "==> Running tests"
-ctest --test-dir "$BUILD_DIR" --output-on-failure
+# Test executables load the Qt and SDL2 DLLs from PATH
+PATH="$(cygpath -u "$QT_PREFIX")/bin:$SDL2_DIR:$PATH" \
+    ctest --test-dir "$BUILD_DIR" --output-on-failure
+
+echo "==> Bundling Qt runtime"
+"$QT_PREFIX/bin/windeployqt.exe" --release --no-translations --no-opengl-sw --no-system-d3d-compiler "$BUILD_DIR/src/gamepad-tool.exe"
 
 echo "==> Done"
 echo "Binary: $BUILD_DIR/src/gamepad-tool.exe"
-echo "Run windeployqt on the binary to bundle Qt DLLs for distribution."
