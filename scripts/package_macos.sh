@@ -28,11 +28,22 @@ if [ ! -d "$APP_BUNDLE/Contents/Frameworks/QtCore.framework" ]; then
 fi
 
 echo "==> Creating DMG"
-hdiutil create \
-    -volname "SDL2 Gamepad Tool" \
-    -srcfolder "$APP_BUNDLE" \
-    -ov -format UDZO \
-    "$DMG_PATH"
+# hdiutil intermittently fails with "Resource busy" (common on CI runners)
+for attempt in 1 2 3 4 5; do
+    if hdiutil create \
+        -volname "SDL2 Gamepad Tool" \
+        -srcfolder "$APP_BUNDLE" \
+        -ov -format UDZO \
+        "$DMG_PATH"; then
+        break
+    fi
+    if [ "$attempt" -eq 5 ]; then
+        echo "Error: hdiutil create failed after $attempt attempts"
+        exit 1
+    fi
+    echo "==> hdiutil create failed, retrying ($attempt/5)"
+    sleep 10
+done
 
 # Notarize if credentials are available
 if [ -n "$APPLE_ID" ] && [ -n "$APPLE_PASSWORD" ] && [ -n "$APPLE_TEAM_ID" ]; then
