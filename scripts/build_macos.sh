@@ -47,6 +47,10 @@ cmake "$PROJECT_DIR" \
     -DCMAKE_OSX_ARCHITECTURES="$ARCHS" \
     -DCMAKE_BUILD_TYPE=Release
 
+# macdeployqt never overwrites libraries already in the bundle, so start from a
+# fresh bundle to avoid shipping stale Qt/SDL2 copies from a previous build.
+rm -rf "$BUILD_DIR/src/gamepad-tool.app"
+
 echo "==> Building"
 make -j"$(sysctl -n hw.ncpu)"
 

@@ -85,7 +85,7 @@ brew install qt@6 sdl2
 scripts/build_macos.sh
 ```
 
-This produces a universal binary (Intel + Apple Silicon) app bundle at `build/src/gamepad-tool.app` with Qt frameworks bundled.
+This produces an app bundle at `build/src/gamepad-tool.app` with Qt frameworks bundled. It is a universal binary (Intel + Apple Silicon) when Qt is universal, as with the Qt Online Installer; Homebrew Qt gives a native-only build.
 
 To create a distributable DMG:
 ```bash
